@@ -5,13 +5,18 @@
 # Pillow==9.4.0
 # scikit-learn==1.2.0
 # python-dotenv==0.21.0
-opencv-python==4.5.3.56
-numpy==1.19.4
-pyttsx3==2.90
-Pillow==9.0.1
-scikit-learn==0.24.2
-tflite-runtime==2.10.0  # Thay thế tensorflow bằng tflite-runtime
+# opencv-python==4.5.3.56
+# numpy==1.19.4
+# pyttsx3==2.90
+# Pillow==9.0.1
+# scikit-learn==0.24.2
+# tflite-runtime==2.10.0  # Thay thế tensorflow bằng tflite-runtime
 # pip3 install -r requirements.txt
 # python3 app.py --mode collect --letter A
 # python3 app.py --mode train
 # python3 app.py --mode predict --letter A
+opencv-python==4.7.0.72
+Pillow==9.4.0
+scikit-learn==1.2.2
+pyttsx3==2.90
+tflite-runtime==2.10.0

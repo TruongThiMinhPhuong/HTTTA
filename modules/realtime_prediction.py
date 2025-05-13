@@ -1,47 +1,38 @@
 import cv2
 import numpy as np
-import time
-import tflite_runtime.interpreter as tflite
+from tensorflow.keras.models import load_model
+import pickle
 
-class RealTimePredictor:
-    def __init__(self):
-        self.interpreter = tflite.Interpreter(model_path='models/sign_language.tflite')
-        self.interpreter.allocate_tensors()
-        self.input_details = self.interpreter.get_input_details()
-        self.output_details = self.interpreter.get_output_details()
-        self.last_prediction = ''
-        self.last_time = 0
-        
-    def preprocess(self, frame):
-        roi = cv2.resize(frame, (48, 48))
-        return roi.astype(np.float32) / 255.0
-        
-    def predict(self, frame):
-        frame = cv2.flip(frame, 1)
-        roi = frame[100:400, 150:450]
-        
-        # Tiền xử lý
-        input_data = self.preprocess(roi)
-        input_data = np.expand_dims(input_data, axis=0)
-        
-        # Dự đoán
-        self.interpreter.set_tensor(self.input_details[0]['index'], input_data)
-        self.interpreter.invoke()
-        output = self.interpreter.get_tensor(self.output_details[0]['index'])
-        
-        # Xử lý kết quả
-        pred_idx = np.argmax(output)
-        confidence = np.max(output)
-        letter = chr(65 + pred_idx)  # A-Z
-        
-        # Giới hạn tốc độ dự đoán
-        if time.time() - self.last_time > 1.0 and confidence > 0.8:
-            self.last_prediction = letter
-            self.last_time = time.time()
-            
-        # Vẽ kết quả
-        cv2.rectangle(frame, (150, 100), (450, 400), (0, 255, 0), 2)
-        cv2.putText(frame, f"Pred: {self.last_prediction}", (10, 30),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        
-        return frame, self.last_prediction
+model = None
+le = None
+
+def load_models():
+    global model, le
+    try:
+        model = load_model("models/sign_language_cnn.h5")
+        with open("models/label_encoder.pkl", 'rb') as f:
+            le = pickle.load(f)
+    except:
+        print("Warning: Models not loaded! Please train first.")
+        return False
+    return True
+
+def predict_from_frame(frame):
+    if model is None or le is None:
+        if not load_models():
+            return None
+    
+    roi = frame[100:300, 100:300]
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    resized = cv2.resize(gray, (64, 64))
+    normalized = resized.astype("float32") / 255.0
+    reshaped = np.expand_dims(normalized, axis=-1)
+    reshaped = np.expand_dims(reshaped, axis=0)
+    
+    preds = model.predict(reshaped)
+    pred_label = np.argmax(preds, axis=1)
+    letter = le.inverse_transform(pred_label)[0]
+    
+    if np.max(preds) > 0.8:
+        return letter
+    return None
